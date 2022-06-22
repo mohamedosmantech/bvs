@@ -1,0 +1,69 @@
+volumes:
+  data:
+networks:
+  bvs-docker-network:
+services:
+  mysql:
+    image: mysql:oracle
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysqlpw
+      - MYSQL_DATABASE=routesdb
+    ports:
+      - "3308:3308"
+    expose:
+      - "3308"  
+    volumes:
+      - data:/var/lib/mysql2
+    networks:
+      - bvs-docker-network 
+      
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - data:/var/lib/rabbitmq
+    networks:
+      - bvs-docker-network  
+     
+      
+  producer:
+    image: docker.io/mohamedosmantech/bvs-producer:0.0.1-SNAPSHOT 
+    ports:
+      - "8180:8180"
+    networks:
+      - bvs-docker-network   
+    environment:
+         - spring_rabbitmq_host=rabbitmq
+         - spring_rabbitmq_port=5672
+         - spring_rabbitmq_username=guest
+         - spring_rabbitmq_password=guest
+         - spring_r2dbc_url=r2dbc:mysql://mysql:3308/routesdb
+    depends_on:
+      - mysql
+      - rabbitmq      
+        
+  consumer:
+    image: docker.io/mohamedosmantech/bvs-consumer:0.0.1-SNAPSHOT
+    ports:
+      - "8181:8181"
+    networks:
+      - bvs-docker-network
+    environment:
+         - spring_rabbitmq_host=rabbitmq
+         - spring_rabbitmq_port=5672
+         - spring_rabbitmq_username=guest
+         - spring_rabbitmq_password=guest
+         
+    depends_on:
+      - rabbitmq        
+                
+        
+        
+
+
+  
+      
+        
+    
