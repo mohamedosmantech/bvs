@@ -1,75 +1,56 @@
-version: "3.8"
-services:
-  mysql:
-    image: mysql:latest
-    restart: always
-    hostname: mysql
-    container_name: mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=mysqlpw
-      - MYSQL_DATABASE=routersdb
-    ports:
-      - 3307:3306
-    volumes:
-      - db:/var/lib/mysql
-    networks:
-      - bvs-docker-network   
-     
-  rabbitmq:
-    image: rabbitmq:management
-    restart: always
-    hostname: rabbitmq
-    container_name: rabbitmq
-    ports:
-      - 5672:5673
-      - 15672:15672
-    volumes:
-      - db:/var/lib/rabbitmq
-    networks:
-      - bvs-docker-network  
-      
-  producer:
-    image: docker.io/mohamedosmantech/bvs-producer:0.0.1-SNAPSHOT 
-    restart: always
-    ports:
-      - 8090:8090
-    networks:
-      - bvs-docker-network
-    environment:
-         - spring_rabbitmq_host=rabbitmq
-         - spring_rabbitmq_port=5672
-         - spring_rabbitmq_username=guest
-         - spring_rabbitmq_password=guest
-         - spring_r2dbc_url=r2dbc:mysql://root:mysqlpw@host.docker.internal:3307/routersdb 
-         - server_port=8090  
-    depends_on:
-      - rabbitmq      
-  consumer:
-    image: docker.io/mohamedosmantech/bvs-consumer:0.0.1-SNAPSHOT
-    restart: on-failure
-    ports:
-      - 8070:8070
-    networks:
-      - bvs-docker-network
-    environment:
-         - spring_rabbitmq_host=rabbitmq
-         - spring_rabbitmq_port=5672
-         - spring_rabbitmq_username=guest
-         - spring_rabbitmq_password=guest
-         - server_port=8070    
-    depends_on:
-      - rabbitmq  
-      
-volumes:
-  db:
-networks:
-  bvs-docker-network:            
-                driver: bridge
-        
-        
+# BVS  Assessment
+
+Event Driven reactive micro-services with a Gateway.
+
+## Components
+- Producer Docker Image
+- Consumer Docker Image
+- RabbitMQ Messaging Docker Image
+- MySQL DataBase Docker Image
 
 
-  
-      
-        
-         
+
+
+## Installation
+
+#### Use the [docker compose](https://docs.docker.com/compose/install/) to install application in any machine. 
+
+
+```bash
+ docker compose up
+```
+please restart producer docker container because rabbitmq require time start
+#### or 
+
+#### User [Kubernetes](https://kubernetes.io/) Container Orchestration for load balancing, routing, service discovery and auto scaling  
+
+```bash
+ kubectl apply -f ./deployment.yaml
+```
+
+## Usage
+
+##### to add new routes to the database 
+
+```json
+post : http://localhost:8090/save
+{
+  "path":"/consumer2",
+  "consumer":"consumer",
+  "method":"GET"
+}
+```
+##### to send new request to the consumer through the router
+```json
+post : http://localhost:8090/{consumer-path}
+{
+  payload
+}
+```
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
