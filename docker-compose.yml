@@ -27,15 +27,10 @@ services:
       - db:/var/lib/rabbitmq
     networks:
       - bvs-docker-network  
-    healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:5672"]
-        interval: 30s
-        timeout: 10s
-        retries: 5 
       
   producer:
     image: docker.io/mohamedosmantech/bvs-producer:0.0.1-SNAPSHOT 
-    restart: on-failure
+    restart: always
     ports:
       - 8090:8090
     networks:
@@ -45,10 +40,10 @@ services:
          - spring_rabbitmq_port=5672
          - spring_rabbitmq_username=guest
          - spring_rabbitmq_password=guest
-         - spring_r2dbc_url=r2dbc:mysql://root:mysqlpw@host.docker.internal:3307/routersdb   
+         - spring_r2dbc_url=r2dbc:mysql://root:mysqlpw@host.docker.internal:3307/routersdb 
+         - server_port=8090  
     depends_on:
       - rabbitmq      
-         condition=service_completed_successfully
   consumer:
     image: docker.io/mohamedosmantech/bvs-consumer:0.0.1-SNAPSHOT
     restart: on-failure
@@ -61,11 +56,10 @@ services:
          - spring_rabbitmq_port=5672
          - spring_rabbitmq_username=guest
          - spring_rabbitmq_password=guest
-         - server_port=8070
-         
+         - server_port=8070    
     depends_on:
       - rabbitmq  
-         condition=service_completed_successfully
+      
 volumes:
   db:
 networks:
