@@ -1,53 +1,43 @@
-volumes:
-  data:
-networks:
-  bvs-docker-network:
+version: "3.8"
 services:
   mysql:
-    image: mysql:oracle
+    image: mysql:latest
+    restart: always
+    hostname: mysql
+    container_name: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=mysqlpw
-      - MYSQL_DATABASE=routesdb
+      - MYSQL_DATABASE=routersdb
     ports:
-      - "3308:3308"
-    expose:
-      - "3308"  
+      - 3307:3306
     volumes:
-      - data:/var/lib/mysql2
+      - db:/var/lib/mysql
     networks:
-      - bvs-docker-network 
-      
+      - bvs-docker-network   
+     
   rabbitmq:
     image: rabbitmq:management
+    restart: always
+    hostname: rabbitmq
+    container_name: rabbitmq
     ports:
-      - 5672:5672
+      - 5672:5673
       - 15672:15672
     volumes:
-      - data:/var/lib/rabbitmq
+      - db:/var/lib/rabbitmq
     networks:
       - bvs-docker-network  
-     
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:5672"]
+        interval: 30s
+        timeout: 10s
+        retries: 5 
       
   producer:
     image: docker.io/mohamedosmantech/bvs-producer:0.0.1-SNAPSHOT 
+    restart: on-failure
     ports:
-      - "8180:8180"
-    networks:
-      - bvs-docker-network   
-    environment:
-         - spring_rabbitmq_host=rabbitmq
-         - spring_rabbitmq_port=5672
-         - spring_rabbitmq_username=guest
-         - spring_rabbitmq_password=guest
-         - spring_r2dbc_url=r2dbc:mysql://mysql:3308/routesdb
-    depends_on:
-      - mysql
-      - rabbitmq      
-        
-  consumer:
-    image: docker.io/mohamedosmantech/bvs-consumer:0.0.1-SNAPSHOT
-    ports:
-      - "8181:8181"
+      - 8090:8090
     networks:
       - bvs-docker-network
     environment:
@@ -55,10 +45,32 @@ services:
          - spring_rabbitmq_port=5672
          - spring_rabbitmq_username=guest
          - spring_rabbitmq_password=guest
+         - spring_r2dbc_url=r2dbc:mysql://root:mysqlpw@host.docker.internal:3307/routersdb   
+    depends_on:
+      - rabbitmq      
+         condition=service_completed_successfully
+  consumer:
+    image: docker.io/mohamedosmantech/bvs-consumer:0.0.1-SNAPSHOT
+    restart: on-failure
+    ports:
+      - 8070:8070
+    networks:
+      - bvs-docker-network
+    environment:
+         - spring_rabbitmq_host=rabbitmq
+         - spring_rabbitmq_port=5672
+         - spring_rabbitmq_username=guest
+         - spring_rabbitmq_password=guest
+         - server_port=8070
          
     depends_on:
-      - rabbitmq        
-                
+      - rabbitmq  
+         condition=service_completed_successfully
+volumes:
+  db:
+networks:
+  bvs-docker-network:            
+                driver: bridge
         
         
 
@@ -66,4 +78,4 @@ services:
   
       
         
-    
+         
